@@ -199,15 +199,18 @@ async function seedModelRouting(textProvider: CustomProvider | undefined, mediaP
     await routing.saveProviders({ providers }, 0);
     await routing.save(routes, 1);
   } else {
-    // 已有多租户配置时保留原供应商，只补齐本次需要的供应商与路由。
+    // 已有多租户配置时，用本次 env 中的供应商覆盖同 kind+id 的旧配置，其余供应商保持不变。
     const previous = await routing.read();
     const previousProvidersRaw = await routing.readProviders();
     const previousProviders = previousProvidersRaw?.providers ?? [];
-    const mergedProviders = [...previousProviders, ...providers.filter(provider => !previousProviders.some(item => item.kind === provider.kind && item.id === provider.id))];
+    const mergedProviders = [
+      ...previousProviders.filter(item => !providers.some(provider => provider.kind === item.kind && provider.id === item.id)),
+      ...providers,
+    ];
     const revision = previous.revision;
     const currentRoutes = previous.routes;
     let routesRevision = revision;
-    if (mergedProviders.length !== previousProviders.length) {
+    if (JSON.stringify(mergedProviders) !== JSON.stringify(previousProviders)) {
       await routing.saveProviders({ providers: mergedProviders }, revision);
       routesRevision = revision + 1;
     }
