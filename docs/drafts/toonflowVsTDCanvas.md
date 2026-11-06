@@ -154,11 +154,15 @@ TDCanvas 的核心是 `CanvasProject`：
 type CanvasProject = {
   id: string;
   title: string;
+  createdAt: string;
+  updatedAt: string;
   nodes: CanvasNodeData[];
   connections: CanvasConnection[];
   chatSessions: CanvasAssistantSession[];
   activeChatId: string | null;
+  inputMode?: CanvasInputMode;
   backgroundMode: "lines" | "dots" | "blank";
+  showImageInfo: boolean;
   viewport: { x: number; y: number; k: number };
 };
 ```
@@ -197,7 +201,7 @@ Toonflow 的节点包有 9 类：
 
 ### 6.2 TDCanvas
 
-TDCanvas 的用户可见内置节点有 6 类：
+TDCanvas 的节点创建菜单提供 6 类内置节点：
 
 - 文本。
 - 图片。
@@ -205,6 +209,8 @@ TDCanvas 的用户可见内置节点有 6 类：
 - 音频。
 - 生成配置。
 - 组。
+
+`CanvasNodeType` 里另有内部类型 `aitudou`（AI 土豆原生生成节点），它不在普通节点创建菜单中，因此不计入上述 6 类。
 
 官方画布插件提供 Markdown、SVG、HTML、3D 全景、便利贴等节点；插件通过 `@tdtv/plugin-sdk` 独立构建，以 ESM 加载。画布支持：
 
@@ -384,7 +390,7 @@ Toonflow：
 
 ### 13.1 Toonflow
 
-- 约 10.6 万行 TypeScript／TSX／Vue。
+- 约 10.5 万行 TypeScript／TSX／Vue。
 - 仓库不保留测试模块，`AGENTS.md` 明确不新增测试模块。
 - 质量主要靠类型检查、构建和人工验证。
 - 文档偏工程规范、节点 README、发布说明。
@@ -401,7 +407,7 @@ Toonflow：
 
 | 维度 | Toonflow | TDCanvas |
 | --- | --- | --- |
-| 代码规模 | 约 10.6 万行 TS／Vue | 约 6.2 万行 TS + Rust |
+| 代码规模 | 约 10.5 万行 TS／Vue | 约 6.2 万行 TS + Rust |
 | 自动化测试 | 无 | 53 个 TS 测试文件、约 7,700 行 |
 | 文档 | 工程规范／节点文档 | 40 个 MDX + 多份草稿 |
 | 主要风险 | 回归依赖人工，跨端行为难自动验证 | 文档漂移、待验收项多、插件安全边界弱 |
@@ -567,7 +573,7 @@ TDCanvas 的 `LICENSE` 是 GNU Affero General Public License v3.0，`web/src-tau
 
 ### 规模统计口径
 
-- Toonflow：`apps/` 与 `packages/` 下 `.ts`、`.tsx`、`.vue`，排除 `node_modules`、`build`、`dist`，约 10.6 万行。
+- Toonflow：`apps/` 与 `packages/` 下 `.ts`、`.tsx`、`.vue`，排除 `node_modules`、`build`、`dist`，约 10.5 万行。
 - TDCanvas：`web/src`、`web/server`、`canvas-agent/src` 的 `.ts`／`.tsx` 约 5.76 万行；`web/src-tauri/src` 与 `modules/comfyui-local` 的 Rust／TS 约 0.43 万行；合计约 6.2 万行，不含插件和文档。
 - TDCanvas 测试：53 个 `.test.ts`／`.test.tsx`，约 7,700 行；不含 `modules/comfyui-local/tests` 的 `.mjs` 测试。
 

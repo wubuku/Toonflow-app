@@ -341,7 +341,7 @@ Toonflow 的 Agent 更像“可以操作整个工作区和外部工具的通用�
 
 ### 11.2 影策
 
-- `plugin-packages/` 下约 103 个 `.yingce-plugin` 清单，覆盖 OpenAI、Anthropic、Gemini、Bedrock、Azure、Qwen、豆包、即梦、可灵、MiniMax、Runway、Luma、Pika、Replicate、Fal、RunningHub、ComfyUI、支付等。
+- `plugin-packages/` 下有 103 个 `manifest.json`，对应 100 个唯一插件 ID（`a6api`、`antigravity-proxy`、`metaso-h3` 各有两个源码副本），覆盖 OpenAI、Anthropic、Gemini、Bedrock、Azure、Qwen、豆包、即梦、可灵、MiniMax、Runway、Luma、Pika、Replicate、Fal、RunningHub、ComfyUI、支付等。
 - 插件以声明式 Manifest 为主，后端按协议执行。
 - 有内置应用插件（Eagle、提示词优化器、AI 审美批改、媒体转换、编辑器预设）。
 - 有插件权限、版本、安装包校验和沙箱演进方向。
@@ -353,7 +353,7 @@ Toonflow 的 Agent 更像“可以操作整个工作区和外部工具的通用�
 | --- | --- | --- |
 | 插件重点 | UI／节点／工具／团队 | 模型协议／Provider／支付 |
 | 公开市场 | 有插件市场入口 | 以官方包为主，公开市场未完成 |
-| 模型覆盖 | 精选内置 + 自定义 | 103 个插件包（以模型／协议为主），覆盖面更广 |
+| 模型覆盖 | 精选内置 + 自定义 | 103 个清单／100 个唯一插件（以模型／协议为主），覆盖面更广 |
 | 第三方 UI 插件 | 支持 | 有 slot 机制，但公开生态较早 |
 | MCP | 支持 | 未开放 |
 
@@ -399,7 +399,7 @@ Toonflow 也有多租户、钱包、计费账本和模型路由代码，但设�
 
 ### 14.1 Toonflow
 
-- 代码规模约 10.6 万行 TypeScript／TSX／Vue。
+- 代码规模约 10.5 万行 TypeScript／TSX／Vue。
 - `AGENTS.md` 明确不新增测试模块，仓库内没有 `.test.ts`／`.spec.ts`。
 - 质量主要靠类型检查、构建和人工验证。
 - 文档偏工程规范、节点 README、发布说明。
@@ -407,7 +407,7 @@ Toonflow 也有多租户、钱包、计费账本和模型路由代码，但设�
 ### 14.2 影策
 
 - 代码规模约 36.7 万行 TypeScript／Go（其中 `web/src` 约 17.6 万行，`backend` 约 19.2 万行，不含第三方）。
-- `web/test` 与 `backend` 中约 642 个测试文件，`tests/canvas-contract` 另有 42 个 Go 合同测试文件；测试代码合计约 10 万行。
+- `web/test` 与 `backend` 中约 647 个测试文件，`tests/canvas-contract` 另有 42 个 Go 合同测试文件；测试代码合计约 10.1 万行。
 - `docs/` 下约 259 个 Markdown／MDX 文件，包含架构、ADR、功能、代码地图、数据库、待测试和深度调研。
 - 数据库 schema 版本 47，有迁移、校验和回退边界说明。
 - 仓库自身也明确区分“已实现”“代码意图”“静态推断”“待验证”。
@@ -416,8 +416,8 @@ Toonflow 也有多租户、钱包、计费账本和模型路由代码，但设�
 
 | 维度 | Toonflow | 影策 |
 | --- | --- | --- |
-| 代码规模 | 约 10.6 万行 TS／Vue | 约 36.7 万行 TS／Go |
-| 自动化测试 | 仓库不保留测试模块 | 约 684 个测试文件、约 10 万行 |
+| 代码规模 | 约 10.5 万行 TS／Vue | 约 36.7 万行 TS／Go |
+| 自动化测试 | 仓库不保留测试模块 | 约 689 个测试文件、约 10.1 万行 |
 | 文档 | 工程规范和节点文档 | 架构、ADR、数据库、功能、验收文档 |
 | 主要风险 | 回归依赖人工，跨端行为难自动验证 | 代码和领域模型重，维护成本高 |
 
@@ -457,7 +457,7 @@ Toonflow 也有多租户、钱包、计费账本和模型路由代码，但设�
 3. 项目级时间线、字幕、服务端渲染。
 4. 3D 预演台领域模型和动画编辑更深。
 5. 账号、积分、支付、管理后台、存储配额完整。
-6. 103 个插件包（以模型／协议为主），国内外供应商覆盖广。
+6. 103 个插件清单、100 个唯一插件（以模型／协议为主），国内外供应商覆盖广。
 7. 测试和文档资产丰富。
 
 ### 16.4 影策的短板
@@ -553,11 +553,11 @@ Toonflow 也有多租户、钱包、计费账本和模型路由代码，但设�
 | 影策生产部署使用 PostgreSQL + Redis | `docker-compose.deploy.yml` |
 | 影策当前 schema 版本 47 | `backend/internal/database/migrations.go` |
 | 影策内置 18 类画布节点 | `web/src/types/canvas.ts` 的 `CanvasNodeType` |
-| 影策有约 103 个插件包 | `plugin-packages/*/manifest.json` 计数 |
+| 影策有 103 个插件清单、100 个唯一插件 ID | `plugin-packages/*/manifest.json` 计数；重复 ID 为 `a6api`、`antigravity-proxy`、`metaso-h3` |
 | 影策六阶段短剧工作流 | `backend/internal/app/project_workflow.go` |
 | 影策时间线 200 层历史 | `web/src/lib/timeline/editor-history.ts` |
 | 影策预演台约 9,700 行 | `web/src/components/canvas/previs` + `web/src/lib/canvas/previs` 统计 |
-| 影策测试约 684 个文件、10 万行 | `web/test`、`backend`、`tests/canvas-contract` 统计 |
+| 影策测试约 689 个文件、10.1 万行 | `web/test`、`backend`、`tests/canvas-contract` 统计 |
 | 影策中文界面 | `web/src/components/layout/app-providers.tsx` 使用 `zhCN` |
 | 影策无原生桌面／移动壳 | 仓库无 Tauri、Electron、Capacitor 配置，仅 Web／Docker |
 | 影策未开放外部 MCP | `docs/content/docs/overview/features.mdx` 明确“未开放外部 MCP” |
@@ -571,8 +571,8 @@ Toonflow 也有多租户、钱包、计费账本和模型路由代码，但设�
 
 ### 规模统计口径
 
-- Toonflow：`apps/` 与 `packages/` 下 `.ts`、`.tsx`、`.vue`，排除 `node_modules`、`build`、`dist`，约 10.6 万行。
+- Toonflow：`apps/` 与 `packages/` 下 `.ts`、`.tsx`、`.vue`，排除 `node_modules`、`build`、`dist`，约 10.5 万行。
 - 影策：`web/src` 下 `.ts`、`.tsx` 约 17.6 万行；`backend` 下 `.go` 约 19.2 万行（不含 `third_party`）。
-- 影策测试：`web/test` 与 `backend` 约 642 个，`tests/canvas-contract` 42 个，合计约 684 个；测试代码约 10 万行。
+- 影策测试：`web/test` 与 `backend` 约 647 个，`tests/canvas-contract` 42 个，合计约 689 个；测试代码约 10.1 万行。
 
 这些是静态代码规模，不代表有效业务代码量或项目质量。
