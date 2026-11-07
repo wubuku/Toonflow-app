@@ -472,7 +472,7 @@ async function main() {
   const persisted = stores["toonflow.projectList"] && typeof stores["toonflow.projectList"] === "object" && !Array.isArray(stores["toonflow.projectList"])
     ? stores["toonflow.projectList"] as Record<string, unknown> : {};
   const previous = Array.isArray(persisted.projectList) ? persisted.projectList : [];
-  const projectEntry = { directory: accounts.directory, name: "Toonflow Dev", lastOpenedAt: Date.now() };
+  const projectEntry = { directory: accounts.directory, name: project.name, lastOpenedAt: Date.now() };
   stores["toonflow.projectList"] = {
     project: persisted.project && typeof persisted.project === "object" ? persisted.project : projectEntry,
     projectList: [projectEntry, ...previous.filter(item => !item || typeof item !== "object" || (item as Record<string, unknown>).directory !== accounts.directory)],

@@ -2,11 +2,11 @@
 
 > 目的：记录本仓库相对上游的改动，区分"新增文件"与"修改上游文件"，便于升级上游和向上游提交补丁。
 >
-> 基线：`upstream/master` 提交 `6086cdf`（v2.0.10）。截至本次提交，`research` 领先 10 个提交、落后 0 个提交。
+> 基线：`upstream/master` 提交 `6086cdf`（v2.0.10）。截至本次提交，`research` 领先 11 个提交、落后 0 个提交。
 
 ## 1. 结论
 
-- 共 14 个文件、+2862 / -7 行；其中 7 个是新文件，占 2848 行（本文件不计入）。
+- 除本文件外共 14 个文件、+2880 / -7 行；其中 7 个是新文件，占 2866 行。
 - 真正的上游源码改动有四处：
   - `apps/server/src/utils/fileHttp.ts`（+7 / -3）— Bun 下 sendFile 404 修复
   - `apps/server/src/app.ts`（+1）— 将 `volcengine.ts` 加入内置媒体供应商自动安装列表
@@ -18,7 +18,7 @@
 
 | 文件 | 状态 | 行数 | 说明 |
 | --- | --- | --- | --- |
-| `scripts/dev.sh` | 新增 | +195 | 本地 dev 一键启动 |
+| `scripts/dev.sh` | 新增 | +213 | 本地 dev 一键启动 |
 | `scripts/dev-seed.ts` | 新增 | +495 | 测试数据与模型 seed（含 volcengine 支持，写入 `$DATA_DIR/providers/volcengine.ts`） |
 | `scripts/dev.env.example` | 新增 | +81 | 火山方舟三 Key 配置模板（豆包 Seed LLM / Seedream / Seedance） |
 | `docs/drafts/toonflowVsReveric.md` | 新增 | +474 | 对比研究 |
@@ -65,6 +65,7 @@
 - `scripts/dev.sh`、`scripts/dev-seed.ts`、`scripts/dev.env.example` 均为新增文件，不修改上游代码。
 - `dev-seed.ts` 在多租户模式下，对同 `kind + id` 的供应商改为**覆盖**（原逻辑为只补缺），因此更新 `.env.dev.local` 后重跑 `./scripts/dev.sh` 会把新的 `apiKey` 同步到 `settings.json` 与 `multiTenant` 的加密供应商配置。
 - 未在 env 中声明的供应商、以及通过管理界面新增的供应商不受影响。
+- `dev.sh` 会将 `TOONFLOW_DEV_DATA_DIR`、`TOONFLOW_DEV_ENV_FILE` 的相对路径统一按仓库根目录解析，避免 seed 与后端从不同 cwd 解析出两个数据目录；`--rebuild` 可强制重建插件与 Web。
 
 ## 6. 升级上游
 

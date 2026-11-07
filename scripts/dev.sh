@@ -14,6 +14,7 @@ WEB_LOG="$LOG_DIR/web.log"
 BACKEND_PORT="${TOONFLOW_DEV_BACKEND_PORT:-3100}"
 FRONTEND_PORT="${TOONFLOW_DEV_FRONTEND_PORT:-5180}"
 ENV_FILE="${TOONFLOW_DEV_ENV_FILE:-$REPO_ROOT/.env.dev.local}"
+REBUILD=0
 
 log() { printf '\033[36m[dev]\033[0m %s\n' "$*"; }
 warn() { printf '\033[33m[dev]\033[0m %s\n' "$*"; }
@@ -25,6 +26,7 @@ usage() {
   ./scripts/dev.sh
   ./scripts/dev.sh --backend-port=3100 --frontend-port=5180
   ./scripts/dev.sh --env-file=.env.dev.local
+  ./scripts/dev.sh --rebuild
   TOONFLOW_DEV_DATA_DIR=.local/dev-data ./scripts/dev.sh
 
 默认读取仓库根目录 .env.dev.local；模板见 scripts/dev.env.example。
@@ -37,13 +39,25 @@ for arg in "$@"; do
     --backend-port=*) BACKEND_PORT="${arg#*=}" ;;
     --frontend-port=*) FRONTEND_PORT="${arg#*=}" ;;
     --env-file=*) ENV_FILE="${arg#*=}" ;;
+    --rebuild) REBUILD=1 ;;
     -h|--help) usage; exit 0 ;;
     *) die "未知参数：${arg}" ;;
   esac
 done
 
+# 相对路径统一按仓库根目录解析，避免 seed 与后端从不同 cwd 解析到两个数据目录。
+normalize_path() {
+  case "$1" in
+    "~/"*) printf '%s/%s' "$HOME" "${1#~/}" ;;
+    /*) printf '%s' "$1" ;;
+    *) printf '%s/%s' "$REPO_ROOT" "$1" ;;
+  esac
+}
+DATA_DIR="$(normalize_path "$DATA_DIR")"
+ENV_FILE="$(normalize_path "$ENV_FILE")"
+
 if [ -f "$ENV_FILE" ]; then
-  export TOONFLOW_DEV_MULTITENANT="$(sed -n 's/^TOONFLOW_DEV_MULTITENANT=//p' "$ENV_FILE" | tail -n 1)"
+  export TOONFLOW_DEV_MULTITENANT="$(sed -n 's/^TOONFLOW_DEV_MULTITENANT=//p' "$ENV_FILE" | tr -d '\r' | tail -n 1)"
 else
   die "未找到 ${ENV_FILE}。请执行：cp scripts/dev.env.example .env.dev.local，然后填写 3 个 API Key（豆包 Seed LLM / Seedream / Seedance）"
 fi
@@ -51,6 +65,9 @@ fi
 [[ "$FRONTEND_PORT" =~ ^[0-9]+$ ]] && [ "$FRONTEND_PORT" -ge 1 ] && [ "$FRONTEND_PORT" -le 65535 ] || die "前端端口无效：$FRONTEND_PORT"
 [ "$BACKEND_PORT" != "$FRONTEND_PORT" ] || die "前后端端口不能相同"
 
+if ! command -v bun >/dev/null 2>&1 && [ -x "$REPO_ROOT/.local/bin/bun" ]; then
+  export PATH="$REPO_ROOT/.local/bin:$PATH"
+fi
 command -v bun >/dev/null 2>&1 || die "未找到 bun，请先安装 Bun 1.4+"
 command -v curl >/dev/null 2>&1 || die "未找到 curl"
 
@@ -102,14 +119,14 @@ if [ ! -d "$REPO_ROOT/node_modules" ]; then
   (cd "$REPO_ROOT" && bun install --frozen-lockfile)
 fi
 
-if [ ! -d "$REPO_ROOT/build/tools" ] || [ -z "$(ls -A "$REPO_ROOT/build/tools" 2>/dev/null)" ] \
+if [ "$REBUILD" = "1" ] || [ ! -d "$REPO_ROOT/build/tools" ] || [ -z "$(ls -A "$REPO_ROOT/build/tools" 2>/dev/null)" ] \
   || [ ! -d "$REPO_ROOT/build/nodes" ] || [ -z "$(ls -A "$REPO_ROOT/build/nodes" 2>/dev/null)" ] \
   || [ ! -d "$REPO_ROOT/build/ext" ] || [ -z "$(ls -A "$REPO_ROOT/build/ext" 2>/dev/null)" ]; then
   log "构建内置节点、工具与扩展（首次较慢）..."
   (cd "$REPO_ROOT" && bun run dev:plugins)
 fi
 
-if [ "${TOONFLOW_DEV_MULTITENANT:-0}" = "1" ] && { [ ! -d "$REPO_ROOT/build/web" ] || [ -z "$(ls -A "$REPO_ROOT/build/web" 2>/dev/null)" ]; }; then
+if [ "${TOONFLOW_DEV_MULTITENANT:-0}" = "1" ] && { [ "$REBUILD" = "1" ] || [ ! -d "$REPO_ROOT/build/web" ] || [ -z "$(ls -A "$REPO_ROOT/build/web" 2>/dev/null)" ]; }; then
   log "构建 Web（多租户创作入口需要静态资源）..."
   (cd "$REPO_ROOT" && bun run --filter '@toonflow/web' build)
 fi
@@ -141,6 +158,7 @@ cleanup() {
 }
 trap 'exit 130' INT
 trap 'exit 143' TERM
+trap 'exit 129' HUP
 trap cleanup EXIT
 
 wait_http() {
