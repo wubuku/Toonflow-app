@@ -1,13 +1,15 @@
 # Toonflow 上游差异说明（research 分支）
 
-> 目的：记录本仓库相对上游的改动，区分“新增文件”与“修改上游文件”，便于升级上游和向上游提交补丁。
+> 目的：记录本仓库相对上游的改动，区分"新增文件"与"修改上游文件"，便于升级上游和向上游提交补丁。
 >
 > 基线：`upstream/master` 提交 `6086cdf`（v2.0.10）。截至 `f17bf75`，`research` 领先 6 个提交、落后 0 个提交。
 
 ## 1. 结论
 
-- 共 9 个文件、+2358 / -3 行；其中 6 个是新文件，占 2350 行（本文件不计入）。
-- 真正的上游源码改动只有 `apps/server/src/utils/fileHttp.ts`（+7 / -3）。
+- 共 10 个文件、+2623 / -3 行；其中 7 个是新文件，占 2615 行（本文件不计入）。
+- 真正的上游源码改动有两处：
+  - `apps/server/src/utils/fileHttp.ts`（+7 / -3）— Bun 下 sendFile 404 修复
+  - `apps/server/src/app.ts`（+1）— 将 `volcengine.ts` 加入内置媒体供应商自动安装列表
 - 其余两处：`.gitignore` 加一行 `/.local/`；`packages/mcp/src/stdio.ts` 仅文件权限位 100644 → 100755（该文件是 MCP 的 bin 入口）。
 
 ## 2. 文件清单
@@ -15,16 +17,18 @@
 | 文件 | 状态 | 行数 | 说明 |
 | --- | --- | --- | --- |
 | `scripts/dev.sh` | 新增 | +194 | 本地 dev 一键启动 |
-| `scripts/dev-seed.ts` | 新增 | +465 | 测试数据与模型 seed |
-| `scripts/dev.env.example` | 新增 | +59 | seed 配置模板 |
+| `scripts/dev-seed.ts` | 新增 | +475 | 测试数据与模型 seed（含 volcengine 支持） |
+| `scripts/dev.env.example` | 新增 | +65 | seed 配置模板（含 volcengine 示例） |
 | `docs/drafts/toonflowVsReveric.md` | 新增 | +474 | 对比研究 |
 | `docs/drafts/toonflowVsTDCanvas.md` | 新增 | +580 | 对比研究 |
 | `docs/drafts/toonflowVsYingce.md` | 新增 | +578 | 对比研究 |
+| `packages/providers/src/media/volcengine.ts` | 新增 | +265 | 火山方舟官方 Seedream + Seedance 供应商 |
 | `.gitignore` | 修改 | +1 | 忽略 `/.local/` |
 | `apps/server/src/utils/fileHttp.ts` | 修改 | +7 / -3 | Bun 下 sendFile 404 修复 |
+| `apps/server/src/app.ts` | 修改 | +1 | 内置媒体供应商列表加入 volcengine.ts |
 | `packages/mcp/src/stdio.ts` | 权限 | 0 | 100644 → 100755 |
 
-## 3. 唯一的上游补丁：`fileHttp.ts`
+## 3. 上游补丁：`fileHttp.ts`
 
 - 问题：Bun 运行时下，Express `res.sendFile` 会把绝对路径与 `root` 再次拼接，返回 404。
 - 现状：4 个调用点（`routes/nodes/files.ts`、`routes/ext/read.ts`、`routes/workspaces/files/read.ts`、`routes/assets/read.ts`）都传绝对路径且不带 `root`。
@@ -32,22 +36,38 @@
 - 影响面：仅修正 Bun 下的 404，Node 下行为不变。
 - 上游化建议：可作为独立 PR 提交；建议附一条 Bun 运行时的回归用例。
 
-## 4. 一键脚本与 apiKey 覆盖
+## 4. 火山方舟（Volcengine Ark）官方供应商
+
+- 新增 `packages/providers/src/media/volcengine.ts`：官方 Ark 原生协议，支持 Seedream 5.0 Pro / 5.0 图片 + Seedance 2.5 / 2.0 / 2.0 fast / 2.0 mini 视频；图片与视频支持独立 API Key（`imageApiKey` 缺省回退 `apiKey`）。
+- 图片走 `POST /api/v3/images/generations`（同步，b64_json），支持比例→像素映射。
+- 视频走 `POST /api/v3/contents/generations/tasks`（异步，轮询），支持首帧/首尾帧/参考素材。
+- `apps/server/src/app.ts` 的 `autoInstallProviders` 数组新增 `"volcengine.ts"`，确保构建时自动安装。
+- `scripts/dev-seed.ts` 新增 `volcengine` / `ark` 别名支持，读取 `TOONFLOW_DEV_MEDIA_API_KEY` 和可选 `TOONFLOW_DEV_MEDIA_BASE_URL`。
+
+### 已知限制：参考素材使用 Base64 Data URI
+
+- 当前实现将参考素材（首帧、尾帧、参考图/视频/音频）编码为 `data:<mime>;base64,<payload>` 直接放入请求体，与 `metaso`、`apiMart` 等现有供应商一致。
+- 火山方舟官方 API 对请求体有 **64 MB** 上限，且官方建议单张图片 Base64 **< 10 MB**。Base64 编码会使体积增加约 33%，多张参考图或参考视频场景可能触发限制。
+- **Seedream 图片生成**：参考图通常 1–5 MB，单张场景基本安全。
+- **Seedance 视频生成**：首帧/尾帧/参考图通常 1–5 MB；**参考视频**（10–100 MB）使用 Base64 极可能超限。
+- **后续迭代方向**：参考星幕（seedance-research）的 TOS 对象存储方案，在 Toonflow 中引入对象存储抽象，将素材上传至 TOS/S3 后传 URL 给火山方舟。当前 Toonflow 尚无对象存储基础设施，此项不在本次目标范围内。
+
+## 5. 一键脚本与 apiKey 覆盖
 
 - `scripts/dev.sh`、`scripts/dev-seed.ts`、`scripts/dev.env.example` 均为新增文件，不修改上游代码。
 - `dev-seed.ts` 在多租户模式下，对同 `kind + id` 的供应商改为**覆盖**（原逻辑为只补缺），因此更新 `.env.dev.local` 后重跑 `./scripts/dev.sh` 会把新的 `apiKey` 同步到 `settings.json` 与 `multiTenant` 的加密供应商配置。
 - 未在 env 中声明的供应商、以及通过管理界面新增的供应商不受影响。
 
-## 5. 升级上游
+## 6. 升级上游
 
 ```bash
 git fetch upstream
 git rebase upstream/master
 ```
 
-预计冲突点：`.gitignore`（`/.local/` 一行）、`apps/server/src/utils/fileHttp.ts`。`scripts/` 与 `docs/drafts/` 均为新增文件，一般不冲突。
+预计冲突点：`.gitignore`（`/.local/` 一行）、`apps/server/src/utils/fileHttp.ts`、`apps/server/src/app.ts`（autoInstallProviders 数组）。`scripts/` 与 `docs/drafts/` 均为新增文件，一般不冲突。
 
-## 6. 已知遗留
+## 7. 已知遗留
 
 - `dev-seed.ts` 不会清理从 env 中移除的模型路由；换 key 场景不受影响。
 - 密钥仍存在两份副本：`settings.json` 的 `customProviders` 与 `multiTenant` 的 `providerCipher`，由 seed 同时写入。

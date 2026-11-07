@@ -36,7 +36,7 @@ type MediaRouteSpec = {
   price: string;
 };
 
-const mediaProviderIds: Record<string, string> = { apimart: "apiMart", metaso: "metaso", compshare: "compshare" };
+const mediaProviderIds: Record<string, string> = { apimart: "apiMart", metaso: "metaso", compshare: "compshare", volcengine: "volcengine", ark: "volcengine" };
 
 function fail(message: string): never {
   throw new Error(message);
@@ -317,8 +317,16 @@ function buildMediaConfigs(): Record<string, Record<string, unknown>> | undefine
     const apiKey = optional("TOONFLOW_DEV_MEDIA_API_KEY");
     if (!apiKey) fail("TOONFLOW_DEV_MEDIA_PROVIDER=compshare 时必须填写 TOONFLOW_DEV_MEDIA_API_KEY");
     config = { apiKey, minimaxApiKey: optional("TOONFLOW_DEV_MEDIA_MINIMAX_API_KEY") || "" };
+  } else if (id === "volcengine") {
+    const apiKey = optional("TOONFLOW_DEV_MEDIA_API_KEY");
+    if (!apiKey) fail("TOONFLOW_DEV_MEDIA_PROVIDER=volcengine 时必须填写 TOONFLOW_DEV_MEDIA_API_KEY");
+    config = {
+      apiKey,
+      imageApiKey: optional("TOONFLOW_DEV_MEDIA_IMAGE_API_KEY") || apiKey,
+      baseUrl: optional("TOONFLOW_DEV_MEDIA_BASE_URL") || "https://ark.cn-beijing.volces.com/api/v3",
+    };
   } else {
-    fail("TOONFLOW_DEV_MEDIA_PROVIDER 目前只支持 apiMart、metaso、compshare 或 none");
+    fail("TOONFLOW_DEV_MEDIA_PROVIDER 目前只支持 apiMart、metaso、compshare、volcengine 或 none");
   }
   const override = optional("TOONFLOW_DEV_MEDIA_CONFIG_JSON");
   if (override) {
@@ -428,7 +436,10 @@ async function main() {
   settings.multiTenantEnabled = enabled("TOONFLOW_DEV_MULTITENANT");
   const accounts = await seedAccounts();
   const mediaProvider = buildMediaProvider();
-  const mediaRoutes = parseMediaRoutes(optional("TOONFLOW_DEV_MEDIA_ROUTES") || "seedance-2.5:Seedance 2.5:video:0.001");
+  const defaultRoutes = mediaProvider?.id === "volcengine"
+    ? "doubao-seedream-5-0-pro-260628:Seedream 5.0 Pro:image:0.001,doubao-seedance-2-5-260628:Seedance 2.5:video:0.001"
+    : "seedance-2.5:Seedance 2.5:video:0.001";
+  const mediaRoutes = parseMediaRoutes(optional("TOONFLOW_DEV_MEDIA_ROUTES") || defaultRoutes);
   const routed = await seedModelRouting(textProvider, mediaProvider, mediaRoutes);
   const balance = mediaProvider || textProvider ? await seedUserBalance(accounts.userId) : undefined;
   const project = seedProject(settings);
