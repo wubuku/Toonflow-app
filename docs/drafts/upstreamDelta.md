@@ -6,11 +6,12 @@
 
 ## 1. 结论
 
-- 除本文件外共 14 个文件、+2880 / -7 行；其中 7 个是新文件，占 2866 行。
-- 真正的上游源码改动有四处：
+- 除本文件外共 15 个文件、+2881 / -8 行；其中 7 个是新文件，占 2866 行。
+- 真正的上游源码改动有五处：
   - `apps/server/src/utils/fileHttp.ts`（+7 / -3）— Bun 下 sendFile 404 修复
   - `apps/server/src/app.ts`（+1）— 将 `volcengine.ts` 加入内置媒体供应商自动安装列表
   - `apps/server/src/utils/media/generation.ts`（+1 / -1）— 视频 `referenceOrder` 白名单加入 `volcengine`
+  - `apps/server/src/utils/multiTenant/modelAdapters.ts`（+1 / -1）— 平台媒体模型允许 `adaptive` 比例
   - `packages/providers/index.ts`、`packages/providers/package.json`（各 +2 / -1）— 导出并暴露新供应商模块
 - 其余：`.gitignore` 加一行 `/.local/`；`packages/mcp/src/stdio.ts` 仅文件权限位 100644 → 100755（该文件是 MCP 的 bin 入口）。
 
@@ -29,6 +30,7 @@
 | `apps/server/src/utils/fileHttp.ts` | 修改 | +7 / -3 | Bun 下 sendFile 404 修复 |
 | `apps/server/src/app.ts` | 修改 | +1 | 内置媒体供应商列表加入 volcengine.ts |
 | `apps/server/src/utils/media/generation.ts` | 修改 | +1 / -1 | referenceOrder 白名单加入 volcengine |
+| `apps/server/src/utils/multiTenant/modelAdapters.ts` | 修改 | +1 / -1 | 平台媒体模型允许 `adaptive` 比例 |
 | `packages/providers/index.ts` | 修改 | +2 / -1 | 导出 volcengine |
 | `packages/providers/package.json` | 修改 | +2 / -1 | exports 增加 volcengine |
 | `packages/mcp/src/stdio.ts` | 权限 | 0 | 100644 → 100755 |
@@ -50,6 +52,7 @@
 - 异常路径：HTTP 错误读取 Ark `error.code/message` 并透出；任务 `failed/cancelled/expired` 映射 `MEDIA_TASK_FAILED`；非 JSON、缺任务 ID、缺视频地址、未知状态均有明确报错；请求体超过 64 MB 时本地拦截。
 - `apps/server/src/app.ts` 的 `autoInstallProviders` 数组新增 `"volcengine.ts"`，确保构建时自动安装。
 - `apps/server/src/utils/media/generation.ts` 将 `volcengine` 加入视频 `referenceOrder` 白名单。
+- `apps/server/src/utils/multiTenant/modelAdapters.ts` 的媒体模型能力校验原本只接受 `W:H` 形式的 `imageRatios`，会拒绝 Seedance 的 `adaptive`（同时影响已有的 compshare MiniMax-H3），导致创作端 `/api/ai/media/models` 返回 503 "平台模型能力配置无效"；现改为允许 `adaptive`。
 - `scripts/dev-seed.ts` 新增 `volcengine` / `ark` 别名支持，读取 `TOONFLOW_DEV_MEDIA_API_KEY`、可选 `TOONFLOW_DEV_MEDIA_IMAGE_API_KEY` 和 `TOONFLOW_DEV_MEDIA_BASE_URL`；seed 时把供应商源码写入 `$DATA_DIR/providers/volcengine.ts`；所有示例占位 Key 会在 seed 阶段直接报错，避免把 `REPLACE_WITH_...` 写进配置。
 
 ### 已知限制：参考素材使用 Base64 Data URI
