@@ -2,7 +2,7 @@
 
 > 目的：记录本仓库相对上游的改动，区分"新增文件"与"修改上游文件"，便于升级上游和向上游提交补丁。
 >
-> 基线：`upstream/master` 提交 `6086cdf`（v2.0.10）。截至本次提交，`research` 领先 11 个提交、落后 0 个提交。
+> 基线：`upstream/master` 提交 `6086cdf`（v2.0.10）。截至本次提交，`research` 领先 14 个提交、落后 0 个提交。
 
 ## 1. 结论
 
@@ -77,7 +77,7 @@ git fetch upstream
 git rebase upstream/master
 ```
 
-预计冲突点：`.gitignore`（`/.local/` 一行）、`apps/server/src/utils/fileHttp.ts`、`apps/server/src/app.ts`（autoInstallProviders 数组）。`scripts/` 与 `docs/drafts/` 均为新增文件，一般不冲突。
+预计冲突点：`.gitignore`（`/.local/` 一行）、`apps/server/src/utils/fileHttp.ts`、`apps/server/src/app.ts`（autoInstallProviders 数组）、`apps/server/src/utils/multiTenant/modelAdapters.ts`（imageRatios 校验）。`scripts/` 与 `docs/drafts/` 均为新增文件，一般不冲突。
 
 ## 7. 已知遗留
 
