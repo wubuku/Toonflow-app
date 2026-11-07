@@ -436,6 +436,11 @@ async function main() {
   settings.multiTenantEnabled = enabled("TOONFLOW_DEV_MULTITENANT");
   const accounts = await seedAccounts();
   const mediaProvider = buildMediaProvider();
+  if (mediaProvider?.source) {
+    const providerDirectory = resolve(DATA_DIR, "providers");
+    mkdirSync(providerDirectory, { recursive: true, mode: 0o700 });
+    writeFileSync(resolve(providerDirectory, `${mediaProvider.id}.ts`), mediaProvider.source, { mode: 0o600 });
+  }
   const defaultRoutes = mediaProvider?.id === "volcengine"
     ? "doubao-seedream-5-0-pro-260628:Seedream 5.0 Pro:image:0.001,doubao-seedance-2-5-260628:Seedance 2.5:video:0.001"
     : "seedance-2.5:Seedance 2.5:video:0.001";

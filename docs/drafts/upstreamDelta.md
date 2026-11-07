@@ -2,30 +2,35 @@
 
 > 目的：记录本仓库相对上游的改动，区分"新增文件"与"修改上游文件"，便于升级上游和向上游提交补丁。
 >
-> 基线：`upstream/master` 提交 `6086cdf`（v2.0.10）。截至 `f17bf75`，`research` 领先 6 个提交、落后 0 个提交。
+> 基线：`upstream/master` 提交 `6086cdf`（v2.0.10）。截至本次提交，`research` 领先 9 个提交、落后 0 个提交。
 
 ## 1. 结论
 
-- 共 10 个文件、+2623 / -3 行；其中 7 个是新文件，占 2615 行（本文件不计入）。
-- 真正的上游源码改动有两处：
+- 共 14 个文件、+2836 / -7 行；其中 7 个是新文件，占 2822 行（本文件不计入）。
+- 真正的上游源码改动有四处：
   - `apps/server/src/utils/fileHttp.ts`（+7 / -3）— Bun 下 sendFile 404 修复
   - `apps/server/src/app.ts`（+1）— 将 `volcengine.ts` 加入内置媒体供应商自动安装列表
-- 其余两处：`.gitignore` 加一行 `/.local/`；`packages/mcp/src/stdio.ts` 仅文件权限位 100644 → 100755（该文件是 MCP 的 bin 入口）。
+  - `apps/server/src/utils/media/generation.ts`（+1 / -1）— 视频 `referenceOrder` 白名单加入 `volcengine`
+  - `packages/providers/index.ts`、`packages/providers/package.json`（各 +2 / -1）— 导出并暴露新供应商模块
+- 其余：`.gitignore` 加一行 `/.local/`；`packages/mcp/src/stdio.ts` 仅文件权限位 100644 → 100755（该文件是 MCP 的 bin 入口）。
 
 ## 2. 文件清单
 
 | 文件 | 状态 | 行数 | 说明 |
 | --- | --- | --- | --- |
 | `scripts/dev.sh` | 新增 | +194 | 本地 dev 一键启动 |
-| `scripts/dev-seed.ts` | 新增 | +475 | 测试数据与模型 seed（含 volcengine 支持） |
-| `scripts/dev.env.example` | 新增 | +65 | seed 配置模板（含 volcengine 示例） |
+| `scripts/dev-seed.ts` | 新增 | +484 | 测试数据与模型 seed（含 volcengine 支持，写入 `$DATA_DIR/providers/volcengine.ts`） |
+| `scripts/dev.env.example` | 新增 | +67 | seed 配置模板（含 volcengine 示例） |
 | `docs/drafts/toonflowVsReveric.md` | 新增 | +474 | 对比研究 |
 | `docs/drafts/toonflowVsTDCanvas.md` | 新增 | +580 | 对比研究 |
 | `docs/drafts/toonflowVsYingce.md` | 新增 | +578 | 对比研究 |
-| `packages/providers/src/media/volcengine.ts` | 新增 | +265 | 火山方舟官方 Seedream + Seedance 供应商 |
+| `packages/providers/src/media/volcengine.ts` | 新增 | +445 | 火山方舟官方 Seedream + Seedance 供应商 |
 | `.gitignore` | 修改 | +1 | 忽略 `/.local/` |
 | `apps/server/src/utils/fileHttp.ts` | 修改 | +7 / -3 | Bun 下 sendFile 404 修复 |
 | `apps/server/src/app.ts` | 修改 | +1 | 内置媒体供应商列表加入 volcengine.ts |
+| `apps/server/src/utils/media/generation.ts` | 修改 | +1 / -1 | referenceOrder 白名单加入 volcengine |
+| `packages/providers/index.ts` | 修改 | +2 / -1 | 导出 volcengine |
+| `packages/providers/package.json` | 修改 | +2 / -1 | exports 增加 volcengine |
 | `packages/mcp/src/stdio.ts` | 权限 | 0 | 100644 → 100755 |
 
 ## 3. 上游补丁：`fileHttp.ts`
@@ -41,8 +46,11 @@
 - 新增 `packages/providers/src/media/volcengine.ts`：官方 Ark 原生协议，支持 Seedream 5.0 Pro / 5.0 图片 + Seedance 2.5 / 2.0 / 2.0 fast / 2.0 mini 视频；图片与视频支持独立 API Key（`imageApiKey` 缺省回退 `apiKey`）。
 - 图片走 `POST /api/v3/images/generations`（同步，b64_json），支持比例→像素映射。
 - 视频走 `POST /api/v3/contents/generations/tasks`（异步，轮询），支持首帧/首尾帧/参考素材。
+- 参考素材按 Ark 原生 `content[]` 组装（`first_frame` / `last_frame` / `reference_image` / `reference_video` / `reference_audio`），提示词 `{{ref N}}` 按 `referenceOrder` 改写为 `@图片N` / `@视频N` / `@音频N`。
+- 异常路径：HTTP 错误读取 Ark `error.code/message` 并透出；任务 `failed/cancelled/expired` 映射 `MEDIA_TASK_FAILED`；非 JSON、缺任务 ID、缺视频地址、未知状态均有明确报错；请求体超过 64 MB 时本地拦截。
 - `apps/server/src/app.ts` 的 `autoInstallProviders` 数组新增 `"volcengine.ts"`，确保构建时自动安装。
-- `scripts/dev-seed.ts` 新增 `volcengine` / `ark` 别名支持，读取 `TOONFLOW_DEV_MEDIA_API_KEY` 和可选 `TOONFLOW_DEV_MEDIA_BASE_URL`。
+- `apps/server/src/utils/media/generation.ts` 将 `volcengine` 加入视频 `referenceOrder` 白名单。
+- `scripts/dev-seed.ts` 新增 `volcengine` / `ark` 别名支持，读取 `TOONFLOW_DEV_MEDIA_API_KEY`、可选 `TOONFLOW_DEV_MEDIA_IMAGE_API_KEY` 和 `TOONFLOW_DEV_MEDIA_BASE_URL`；seed 时把供应商源码写入 `$DATA_DIR/providers/volcengine.ts`。
 
 ### 已知限制：参考素材使用 Base64 Data URI
 
