@@ -92,7 +92,7 @@ function optional(name: string) {
 }
 
 function realKey(name: string, value: string) {
-  if (/replace|change.?me|your[-_ ]?key/i.test(value)) fail(`${name} 仍是示例占位值，请填写真实密钥`);
+  if (/^(?:REPLACE_WITH_[A-Z0-9_]+|sk-REPLACE_ME|change[-_ ]?me|your[-_ ]?key)$/i.test(value)) fail(`${name} 仍是示例占位值，请填写真实密钥`);
   return value;
 }
 
