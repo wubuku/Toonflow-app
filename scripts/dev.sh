@@ -2,7 +2,7 @@
 # Toonflow 本地 dev 一键启动（macOS / Linux）。
 #
 # 自动完成：安装依赖 -> 构建插件/Web -> seed 模型/账号/示例项目 -> 启动前后端 -> 健康检查。
-# 密钥从 .env.dev.local 读取，不进入源码或终端输出。
+# 3 个密钥（豆包 Seed LLM / Seedream / Seedance）从 .env.dev.local 读取，不进入源码或终端输出。
 
 set -euo pipefail
 
@@ -28,6 +28,7 @@ usage() {
   TOONFLOW_DEV_DATA_DIR=.local/dev-data ./scripts/dev.sh
 
 默认读取仓库根目录 .env.dev.local；模板见 scripts/dev.env.example。
+模板已预置豆包 Seed LLM / Seedream / Seedance 三个 Key 的位置，只需填这 3 项。
 EOF
 }
 
@@ -44,7 +45,7 @@ done
 if [ -f "$ENV_FILE" ]; then
   export TOONFLOW_DEV_MULTITENANT="$(sed -n 's/^TOONFLOW_DEV_MULTITENANT=//p' "$ENV_FILE" | tail -n 1)"
 else
-  die "未找到 ${ENV_FILE}。请执行：cp scripts/dev.env.example .env.dev.local，然后填写 API Key"
+  die "未找到 ${ENV_FILE}。请执行：cp scripts/dev.env.example .env.dev.local，然后填写 3 个 API Key（豆包 Seed LLM / Seedream / Seedance）"
 fi
 [[ "$BACKEND_PORT" =~ ^[0-9]+$ ]] && [ "$BACKEND_PORT" -ge 1 ] && [ "$BACKEND_PORT" -le 65535 ] || die "后端端口无效：$BACKEND_PORT"
 [[ "$FRONTEND_PORT" =~ ^[0-9]+$ ]] && [ "$FRONTEND_PORT" -ge 1 ] && [ "$FRONTEND_PORT" -le 65535 ] || die "前端端口无效：$FRONTEND_PORT"

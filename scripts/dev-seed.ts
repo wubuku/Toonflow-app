@@ -91,6 +91,11 @@ function optional(name: string) {
   return value || undefined;
 }
 
+function realKey(name: string, value: string) {
+  if (/replace|change.?me|your[-_ ]?key/i.test(value)) fail(`${name} 仍是示例占位值，请填写真实密钥`);
+  return value;
+}
+
 function integer(name: string, fallback: number) {
   const raw = optional(name);
   if (!raw) return fallback;
@@ -273,7 +278,7 @@ function buildTextProvider(): CustomProvider | undefined {
   const apiUrl = optional("TOONFLOW_DEV_TEXT_API_URL");
   if (!apiKey && !apiUrl) return undefined;
   if (!apiKey || !apiUrl) fail("语言模型必须同时填写 TOONFLOW_DEV_TEXT_API_KEY 和 TOONFLOW_DEV_TEXT_API_URL");
-  if (/replace|change.?me|your[-_ ]?key/i.test(apiKey)) fail("TOONFLOW_DEV_TEXT_API_KEY 仍是示例占位值，请填写真实密钥");
+  realKey("TOONFLOW_DEV_TEXT_API_KEY", apiKey);
   let url: URL;
   try { url = new URL(apiUrl); }
   catch { fail("TOONFLOW_DEV_TEXT_API_URL 不是有效 URL"); }
@@ -308,21 +313,27 @@ function buildMediaConfigs(): Record<string, Record<string, unknown>> | undefine
   if (id === "apiMart") {
     const apiKey = optional("TOONFLOW_DEV_MEDIA_API_KEY");
     if (!apiKey) fail("TOONFLOW_DEV_MEDIA_PROVIDER=apiMart 时必须填写 TOONFLOW_DEV_MEDIA_API_KEY");
+    realKey("TOONFLOW_DEV_MEDIA_API_KEY", apiKey);
     config = { apiKey, isOverseas: optional("TOONFLOW_DEV_MEDIA_IS_OVERSEAS") || "1" };
   } else if (id === "metaso") {
     const apiKey = optional("TOONFLOW_DEV_MEDIA_API_KEY");
     if (!apiKey) fail("TOONFLOW_DEV_MEDIA_PROVIDER=metaso 时必须填写 TOONFLOW_DEV_MEDIA_API_KEY");
+    realKey("TOONFLOW_DEV_MEDIA_API_KEY", apiKey);
     config = { apiKey, baseUrl: optional("TOONFLOW_DEV_MEDIA_BASE_URL") || "https://metaso.cn/api/minimax" };
   } else if (id === "compshare") {
     const apiKey = optional("TOONFLOW_DEV_MEDIA_API_KEY");
     if (!apiKey) fail("TOONFLOW_DEV_MEDIA_PROVIDER=compshare 时必须填写 TOONFLOW_DEV_MEDIA_API_KEY");
+    realKey("TOONFLOW_DEV_MEDIA_API_KEY", apiKey);
     config = { apiKey, minimaxApiKey: optional("TOONFLOW_DEV_MEDIA_MINIMAX_API_KEY") || "" };
   } else if (id === "volcengine") {
     const apiKey = optional("TOONFLOW_DEV_MEDIA_API_KEY");
     if (!apiKey) fail("TOONFLOW_DEV_MEDIA_PROVIDER=volcengine 时必须填写 TOONFLOW_DEV_MEDIA_API_KEY");
+    realKey("TOONFLOW_DEV_MEDIA_API_KEY", apiKey);
+    const imageApiKey = optional("TOONFLOW_DEV_MEDIA_IMAGE_API_KEY");
+    if (imageApiKey) realKey("TOONFLOW_DEV_MEDIA_IMAGE_API_KEY", imageApiKey);
     config = {
       apiKey,
-      imageApiKey: optional("TOONFLOW_DEV_MEDIA_IMAGE_API_KEY") || apiKey,
+      imageApiKey: imageApiKey || apiKey,
       baseUrl: optional("TOONFLOW_DEV_MEDIA_BASE_URL") || "https://ark.cn-beijing.volces.com/api/v3",
     };
   } else {
