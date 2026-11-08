@@ -6,7 +6,7 @@
 
 ## 1. 结论
 
-- 除本文件外共 15 个文件、+2881 / -8 行；其中 7 个是新文件，占 2866 行。
+- 除本文件外共 16 个文件、+2966 / -8 行；其中 8 个是新文件，占 2951 行。
 - 真正的上游源码改动有五处：
   - `apps/server/src/utils/fileHttp.ts`（+7 / -3）— Bun 下 sendFile 404 修复
   - `apps/server/src/app.ts`（+1）— 将 `volcengine.ts` 加入内置媒体供应商自动安装列表
@@ -25,6 +25,7 @@
 | `docs/drafts/toonflowVsReveric.md` | 新增 | +474 | 对比研究 |
 | `docs/drafts/toonflowVsTDCanvas.md` | 新增 | +580 | 对比研究 |
 | `docs/drafts/toonflowVsYingce.md` | 新增 | +578 | 对比研究 |
+| `docs/drafts/promptReferenceSemantics.md` | 新增 | +171 | 画布 `@` 引用语义调研 |
 | `packages/providers/src/media/volcengine.ts` | 新增 | +445 | 火山方舟官方 Seedream + Seedance 供应商 |
 | `.gitignore` | 修改 | +1 | 忽略 `/.local/` |
 | `apps/server/src/utils/fileHttp.ts` | 修改 | +7 / -3 | Bun 下 sendFile 404 修复 |
@@ -83,3 +84,19 @@ git rebase upstream/master
 
 - `dev-seed.ts` 不会清理从 env 中移除的模型路由；换 key 场景不受影响。
 - 密钥仍存在两份副本：`settings.json` 的 `customProviders` 与 `multiTenant` 的 `providerCipher`，由 seed 同时写入。
+
+## 8. 上游既有缺陷（本项目未修复，仅记录）
+
+以下问题在 `upstream/master` 的 v2.0.10 上就已存在，**不是本次 research 分支引入**。按「保持前端与上游一致」的约定，本分支不修改这些代码，仅在此留档，供后续上游 PR 使用。
+
+### 8.1 画布提示词输入框：输入 `@` 后引用菜单不立即弹出
+
+- 现象：在画布节点提示词输入框中键入 `@`，引用素材弹层不出现；再敲一个空格（或退格删除）后才弹出。
+- 复现版本：`upstream/master` @ `6086cdf`（v2.0.10）。项目内 `apps/web`、`packages/nodeShared`、`packages/nodeScaffold` 相对上游 diff 为 **0 个文件**。
+- 代码位置：`packages/nodeShared/src/components/promptInput.vue:82` 的 `updateMentionMenu()`。
+- 触发时机：仅由两处驱动——`instance.bus.on("textPrompt", EVENT_COMMON_CHANGE, ...)`（:344）与编辑器 `keyup`（:360，内部走 `instance.nextTick`）。没有监听 `beforeinput` / `input` 的同步补触发。
+- 根因：函数在 :90 处要求 `cursor.instance?.type === "Write"`。键入 `@` 的瞬间，xSender 的 change 事件把光标节点写回模型存在时序差，此时取到的节点类型还不是 `"Write"`，函数直接 `closeMentionMenu()` 返回。等下一次按键（空格 / 退格）再触发 change 或 keyup，模型已同步，菜单才出现。
+- 补充：同一个 :93 的空白判定（`/\s/.test(before.slice(start + 1))`）意味着 `@` 后加空格本应关闭菜单；但因为在第 90 行就提前 `return` 了，所以视觉上表现为「空格把它唤出来」而不是「空格把它关掉」。
+- 引入来源：`c7ffb49`（2026-10-27，"新增 Agent 消息队列、队友协作与代码沙盒，支持节点素材引用…"），该提交已包含在 `upstream/master`，随 v2.0.8 起可用。
+- 建议修法（未实施）：在 `textPrompt` 的 change 回调里也走一次 `instance.nextTick(() => updateMentionMenu())`，与 `keyup` 路径对齐；或把第 90 行的强类型判断放宽为「能取到光标节点与文本即继续」，仅在取不到节点时关闭菜单。
+- 影响面：纯前端输入交互；不影响 dev 脚本、模型供应商、Seed 与生成链路。
